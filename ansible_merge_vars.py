@@ -46,11 +46,6 @@ class ActionModule(ActionBase):
             raise AnsibleError("merged_var_name '%s' is not a valid identifier" % merged_var_name)
         if not suffix_to_merge.endswith('__to_merge'):
             raise AnsibleError("Merge suffix must end with '__to_merge', sorry!")
-        if merged_var_name in all_keys:
-            warning = "{} is already defined, are you sure you want to overwrite it?"
-            display.warning(warning.format(merged_var_name))
-            display.v("The contents of {} are: {}".format(
-                merged_var_name, task_vars[merged_var_name]))
 
         keys = sorted([key for key in task_vars.keys()
                        if key.endswith(suffix_to_merge)])
@@ -78,6 +73,18 @@ class ActionModule(ActionBase):
             raise AnsibleError(
                 "Don't know how to merge variables of type: {}".format(type(merge_vals[0]))
             )
+
+        if merged_var_name in all_keys and task_vars[merged_var_name] != merged:
+            warning = (
+                "{merged_var_name} is already defined, are you sure you want to overwrite it? "
+                "The existing contents of {merged_var_name} are: {existing_contents} "
+                "The new contents of {merged_var_name} will be: {new_contents} "
+            ).format(
+                merged_var_name=merged_var_name,
+                existing_contents=task_vars[merged_var_name],
+                new_contents=merged,
+            )
+            display.warning(warning)
 
         return {
             'ansible_facts': {merged_var_name: merged},
